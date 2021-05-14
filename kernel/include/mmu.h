@@ -28,7 +28,7 @@
 #define Z_PHYS_RAM_START	((uintptr_t)CONFIG_SRAM_BASE_ADDRESS)
 #define Z_PHYS_RAM_SIZE		((size_t)KB(CONFIG_SRAM_SIZE))
 #define Z_PHYS_RAM_END		(Z_PHYS_RAM_START + Z_PHYS_RAM_SIZE)
-#define Z_NUM_PAGE_FRAMES	(Z_PHYS_RAM_SIZE / CONFIG_MMU_PAGE_SIZE)
+#define Z_NUM_PAGE_FRAMES	(Z_PHYS_RAM_SIZE / (size_t)CONFIG_MMU_PAGE_SIZE)
 
 /** End virtual address of virtual address space */
 #define Z_VIRT_RAM_START	((uint8_t *)CONFIG_KERNEL_VM_BASE)
@@ -41,14 +41,14 @@
 #define Z_KERNEL_VIRT_SIZE	(Z_KERNEL_VIRT_END - Z_KERNEL_VIRT_START)
 
 #define Z_VM_OFFSET	 ((CONFIG_KERNEL_VM_BASE + CONFIG_KERNEL_VM_OFFSET) - \
-			  CONFIG_SRAM_BASE_ADDRESS)
+			  (CONFIG_SRAM_BASE_ADDRESS + CONFIG_SRAM_OFFSET))
 
 /* Only applies to boot RAM mappings within the Zephyr image that have never
  * been remapped or paged out. Never use this unless you know exactly what you
  * are doing.
  */
-#define Z_BOOT_VIRT_TO_PHYS(virt) ((uintptr_t)(((uint8_t *)virt) + Z_VM_OFFSET))
-#define Z_BOOT_PHYS_TO_VIRT(phys) ((uint8_t *)(((uintptr_t)phys) - Z_VM_OFFSET))
+#define Z_BOOT_VIRT_TO_PHYS(virt) ((uintptr_t)(((uint8_t *)virt) - Z_VM_OFFSET))
+#define Z_BOOT_PHYS_TO_VIRT(phys) ((uint8_t *)(((uintptr_t)phys) + Z_VM_OFFSET))
 
 #ifdef CONFIG_ARCH_MAPS_ALL_RAM
 #define Z_FREE_VM_START	Z_BOOT_PHYS_TO_VIRT(Z_PHYS_RAM_END)
@@ -118,27 +118,27 @@ struct z_page_frame {
 
 static inline bool z_page_frame_is_pinned(struct z_page_frame *pf)
 {
-	return (pf->flags & Z_PAGE_FRAME_PINNED) != 0;
+	return (pf->flags & Z_PAGE_FRAME_PINNED) != 0U;
 }
 
 static inline bool z_page_frame_is_reserved(struct z_page_frame *pf)
 {
-	return (pf->flags & Z_PAGE_FRAME_RESERVED) != 0;
+	return (pf->flags & Z_PAGE_FRAME_RESERVED) != 0U;
 }
 
 static inline bool z_page_frame_is_mapped(struct z_page_frame *pf)
 {
-	return (pf->flags & Z_PAGE_FRAME_MAPPED) != 0;
+	return (pf->flags & Z_PAGE_FRAME_MAPPED) != 0U;
 }
 
 static inline bool z_page_frame_is_busy(struct z_page_frame *pf)
 {
-	return (pf->flags & Z_PAGE_FRAME_BUSY) != 0;
+	return (pf->flags & Z_PAGE_FRAME_BUSY) != 0U;
 }
 
 static inline bool z_page_frame_is_backed(struct z_page_frame *pf)
 {
-	return (pf->flags & Z_PAGE_FRAME_BACKED) != 0;
+	return (pf->flags & Z_PAGE_FRAME_BACKED) != 0U;
 }
 
 static inline bool z_page_frame_is_evictable(struct z_page_frame *pf)
@@ -152,12 +152,12 @@ static inline bool z_page_frame_is_evictable(struct z_page_frame *pf)
  */
 static inline bool z_page_frame_is_available(struct z_page_frame *page)
 {
-	return page->flags == 0;
+	return page->flags == 0U;
 }
 
 static inline void z_assert_phys_aligned(uintptr_t phys)
 {
-	__ASSERT(phys % CONFIG_MMU_PAGE_SIZE == 0,
+	__ASSERT(phys % CONFIG_MMU_PAGE_SIZE == 0U,
 		 "physical address 0x%lx is not page-aligned", phys);
 	(void)phys;
 }
@@ -193,9 +193,9 @@ static inline struct z_page_frame *z_phys_to_page_frame(uintptr_t phys)
 
 static inline void z_mem_assert_virtual_region(uint8_t *addr, size_t size)
 {
-	__ASSERT((uintptr_t)addr % CONFIG_MMU_PAGE_SIZE == 0,
+	__ASSERT((uintptr_t)addr % CONFIG_MMU_PAGE_SIZE == 0U,
 		 "unaligned addr %p", addr);
-	__ASSERT(size % CONFIG_MMU_PAGE_SIZE == 0,
+	__ASSERT(size % CONFIG_MMU_PAGE_SIZE == 0U,
 		 "unaligned size %zu", size);
 	__ASSERT(addr + size > addr,
 		 "region %p size %zu zero or wraps around", addr, size);
